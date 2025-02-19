@@ -160,6 +160,8 @@ async def send_to_telegram_reply(message, telegram_channel):
         telegram_message_id = tg_message.message_id
         db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id)
         return
+    else:
+        print("Original Telegram message ID not found")
     
 async def send_to_telegram(message, telegram_channel):
     user_data = get_discord_user_data(message)

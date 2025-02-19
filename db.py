@@ -13,6 +13,7 @@ def save_message_to_db(telegram_message_id, discord_message_id):
         "telegram_message_id": telegram_message_id,
         "discord_message_id": discord_message_id
     })
+    print(f'Message saved to database: {telegram_message_id:} : {discord_message_id}')
     # logger(f'Message saved to database: {telegram_message_id:} : {discord_message_id}')
 
 def get_discord_message_id(telegram_message_id):
