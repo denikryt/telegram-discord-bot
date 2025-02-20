@@ -1,11 +1,14 @@
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+from dotenv import load_dotenv
 import logging
 import os
 import logging
 
 # Configure logging to overwrite logs by new running of the script
 logging.basicConfig(filename='app.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+load_dotenv()
 
 # MongoDB configuration
 MONGO_DB = os.environ.get('MONGO_DB')
