@@ -4,6 +4,9 @@ import logging
 import os
 import logging
 
+# Configure logging to overwrite logs by new running of the script
+logging.basicConfig(filename='app.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 # MongoDB configuration
 MONGO_DB = os.environ.get('MONGO_DB')
 mongo_client = MongoClient(MONGO_DB, server_api=ServerApi('1'), serverSelectionTimeoutMS=60000)  

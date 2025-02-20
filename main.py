@@ -11,9 +11,6 @@ import emoji
 import random
 import logging
 
-# Configure logging
-logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 load_dotenv()
 
 animal_emojis = [
