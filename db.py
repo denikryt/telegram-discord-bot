@@ -21,16 +21,19 @@ def ping_mongo():
         mongo_client.admin.command('ping')
         logger("Pinged your deployment. You successfully connected to MongoDB!")
     except Exception as e:
-        logger(e)
+        logger(f"Error connecting to MongoDB: {e}")
         raise e
 
 def save_message_to_db(telegram_message_id, discord_message_id):
-    messages_collection.insert_one({
-        "telegram_message_id": telegram_message_id,
-        "discord_message_id": discord_message_id
-    })
-    logger(f'Message saved to database: {telegram_message_id:} : {discord_message_id}')
-
+    try:
+        messages_collection.insert_one({
+            "telegram_message_id": telegram_message_id,
+            "discord_message_id": discord_message_id
+        })
+        logger(f'Message saved to database: {telegram_message_id:} : {discord_message_id}')
+    except Exception as e:
+        logger(f"Error saving message to database: {e}")
+    
 def get_discord_message_id(telegram_message_id):
     result = messages_collection.find_one({"telegram_message_id": telegram_message_id})
     if result:
