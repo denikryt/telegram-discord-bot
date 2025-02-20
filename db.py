@@ -36,16 +36,18 @@ def get_discord_message_id(telegram_message_id):
     if result:
         logger("Discord message ID have been found for this Telegram message ID")
         return result['discord_message_id']
-    logger("Discord message ID not found for this Telegram message ID")
-    raise KeyError("Discord message ID not found for this Telegram message ID")
+    else:
+        logger("Discord message ID not found for this Telegram message ID")
+        return None
 
 def get_telegram_message_id(discord_message_id):
     result = messages_collection.find_one({"discord_message_id": discord_message_id})
     if result:
         logger("Telegram message ID have been found for this Discord message ID")
         return result['telegram_message_id']
-    logger("Telegram message ID not found for this Discord message ID")
-    raise KeyError("Telegram message ID not found for this Discord message ID")
+    else:
+        logger("Telegram message ID not found for this Discord message ID")
+        return None
 
 def drop_collection():
     messages_collection.drop()
