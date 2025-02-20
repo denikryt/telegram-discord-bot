@@ -9,6 +9,10 @@ import json
 import db
 import emoji
 import random
+import logging
+
+# Configure logging
+logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 load_dotenv()
 
@@ -53,6 +57,7 @@ def run_telegram():
     @tg_bot.message_handler(commands=['start', 'help'])
     def send_welcome(message):
         tg_bot.reply_to(message, "Привет! Я Telegram-бот.")
+        logging.info(f"Sent welcome message to Telegram user {message.from_user.first_name}")
     
     @tg_bot.message_handler(func=lambda message: True)
     def handle_group_messages(message):
@@ -87,8 +92,11 @@ async def send_to_discord_reply(message, discord_channel):
             text = tg_previous_user_check(user_data)
             discord_message = await original_discord_message.reply(text)
             discord_message_id = discord_message.id
-            db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id)
-
+            try:
+                db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id)
+            except Exception as e:
+                logging.error(f"Error saving message to database: {e}")
+            return
 async def send_to_discord(message, discord_channel):
     user_data = get_telegram_user_data(message)
     channel = await dc_bot.fetch_channel(discord_channel)
@@ -97,8 +105,13 @@ async def send_to_discord(message, discord_channel):
         text = tg_previous_user_check(user_data)
         discord_message = await channel.send(text)
         discord_message_id = discord_message.id
-        db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id)
-
+        
+        try:
+            db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id)
+        except Exception as e:
+            logging.error(f"Error saving message to database: {e}")
+        return
+    
 def tg_previous_user_check(user_data):
     global tg_previousUserName
     global lastUserName
@@ -158,7 +171,11 @@ async def send_to_telegram_reply(message, telegram_channel):
         text = dc_previous_user_check(user_data)
         tg_message = tg_bot.send_message(chat_id=telegram_channel, text=text, parse_mode='html', reply_to_message_id=original_telegram_message_id)
         telegram_message_id = tg_message.message_id
-        db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id)
+            
+        try:
+            db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id)
+        except Exception as e:
+            logging.error(f"Error saving message to database: {e}")
         return
     else:
         print("Original Telegram message ID not found")
@@ -169,7 +186,12 @@ async def send_to_telegram(message, telegram_channel):
 
     tg_message = tg_bot.send_message(chat_id=telegram_channel, text=text, parse_mode='html')
     telegram_message_id = tg_message.message_id
-    db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id)
+        
+    try:
+        db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id)
+    except Exception as e:
+        logging.error(f"Error saving message to database: {e}")
+    return
 
 def dc_previous_user_check(user_data):
     global dc_previousUserName
