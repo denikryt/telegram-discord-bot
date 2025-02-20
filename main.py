@@ -94,6 +94,9 @@ async def send_to_discord_reply(message, discord_channel):
             except Exception as e:
                 logging.error(f"Error saving message to database: {e}")
             return
+    else:
+        send_to_discord(message, discord_channel)
+
 async def send_to_discord(message, discord_channel):
     user_data = get_telegram_user_data(message)
     channel = await dc_bot.fetch_channel(discord_channel)
@@ -175,7 +178,7 @@ async def send_to_telegram_reply(message, telegram_channel):
             logging.error(f"Error saving message to database: {e}")
         return
     else:
-        print("Original Telegram message ID not found")
+        send_to_telegram(message, telegram_channel)
     
 async def send_to_telegram(message, telegram_channel):
     user_data = get_discord_user_data(message)
