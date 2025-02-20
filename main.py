@@ -22,7 +22,7 @@ animal_emojis = [
     ":hamster:", ":rabbit:", ":rabbit2:", ":chipmunk:", ":beaver:", ":hedgehog:", ":bat:", ":bear:", ":polar_bear:", 
     ":koala:", ":panda_face:", ":sloth:", ":otter:", ":skunk:", ":kangaroo:", ":badger:", ":turkey:", ":chicken:", 
     ":rooster:", ":hatching_chick:", ":baby_chick:", ":hatched_chick:", ":bird:", ":penguin:", ":dove:", ":eagle:", 
-    ":duck:", ":swan:", ":owl:", ":flamingo:", ":peacock:", ":parrot:", ":whale:", ":whale2:", ":dolphin:", ":seal:", 
+    ":duck:", ":swan:", ":owl:", ":flamingo:", ":peacock:", ":parrot:", ":whale:", ":dolphin:", ":seal:", 
     ":fish:", ":tropical_fish:", ":blowfish:", ":shark:", ":octopus:", ":shell:", ":snail:", ":butterfly:", ":bug:", 
     ":ant:", ":bee:", ":beetle:", ":lady_beetle:", ":cricket:", ":cockroach:", ":spider:", ":spider_web:", ":scorpion:", 
     ":mosquito:", ":fly:", ":worm:", ":microbe:", ":turtle:", ":snake:", ":lizard:", ":crocodile:"

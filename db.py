@@ -47,6 +47,10 @@ def get_telegram_message_id(discord_message_id):
     logger("Telegram message ID not found for this Discord message ID")
     raise KeyError("Telegram message ID not found for this Discord message ID")
 
+def drop_collection():
+    messages_collection.drop()
+    logger("Collection dropped")
+
 def logger(log_text):
     print(log_text)
     logging.info(log_text)
