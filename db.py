@@ -1,13 +1,22 @@
-from pymongo import MongoClient
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 import logging
 import os
 import logging
 
 # MongoDB configuration
 MONGO_DB = os.environ.get('MONGO_DB')
-mongo_client = MongoClient(MONGO_DB, serverSelectionTimeoutMS=60000)  
+mongo_client = MongoClient(MONGO_DB, server_api=ServerApi('1'), serverSelectionTimeoutMS=60000)  
 db = mongo_client['HACKLAB']
 messages_collection = db['Telegram-Discord-NU']
+
+def ping_mongo():
+    try:
+        mongo_client.admin.command('ping')
+        logger("Pinged your deployment. You successfully connected to MongoDB!")
+    except Exception as e:
+        logger(e)
+        raise e
 
 def save_message_to_db(telegram_message_id, discord_message_id):
     messages_collection.insert_one({
@@ -35,3 +44,5 @@ def get_telegram_message_id(discord_message_id):
 def logger(log_text):
     print(log_text)
     logging.info(log_text)
+
+ping_mongo()
