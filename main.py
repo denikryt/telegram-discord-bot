@@ -143,7 +143,7 @@ async def on_ready():
 
 @dc_bot.event
 async def on_message(message: Message):
-    if not message.author.bot:
+    if message.author.id != dc_bot.user.id:
         if str(message.channel.id) == DISCORD_CHANNEL_ID:
             telegram_channel = TELEGRAM_CHANNEL_ID
         elif str(message.channel.id) == DISCORD_CHANNEL_ID_TEST:
