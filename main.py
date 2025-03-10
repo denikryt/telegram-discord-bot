@@ -14,17 +14,17 @@ import logging
 load_dotenv()
 
 animal_emojis = [
-    ":monkey_face:", ":monkey:", ":gorilla:", ":orangutan:", ":dog:", ":dog2:", ":guide_dog:", ":service_dog:", 
-    ":poodle:", ":wolf:", ":fox_face:", ":raccoon:", ":cat:", ":cat2:", ":black_cat:", ":lion:", ":tiger:", ":tiger2:", 
-    ":leopard:", ":horse:", ":racehorse:", ":unicorn:", ":zebra:", ":deer:", ":bison:", ":cow:", ":ox:", ":water_buffalo:", 
-    ":cow2:", ":pig:", ":pig2:", ":boar:", ":pig_nose:", ":ram:", ":sheep:", ":goat:", ":dromedary_camel:", ":camel:", 
-    ":llama:", ":giraffe:", ":elephant:", ":mammoth:", ":rhinoceros:", ":hippopotamus:", ":mouse:", ":mouse2:", ":rat:", 
-    ":hamster:", ":rabbit:", ":rabbit2:", ":chipmunk:", ":beaver:", ":hedgehog:", ":bat:", ":bear:", ":polar_bear:", 
-    ":koala:", ":panda_face:", ":sloth:", ":otter:", ":skunk:", ":kangaroo:", ":badger:", ":turkey:", ":chicken:", 
-    ":rooster:", ":hatching_chick:", ":baby_chick:", ":hatched_chick:", ":bird:", ":penguin:", ":dove:", ":eagle:", 
+    ":monkey_face:", ":monkey:", ":gorilla:", ":orangutan:", ":dog:", ":guide_dog:", ":service_dog:", 
+    ":poodle:", ":wolf:", ":raccoon:", ":cat:", ":black_cat:", ":lion:", ":tiger:", 
+    ":leopard:", ":horse:", ":unicorn:", ":zebra:", ":deer:", ":bison:", ":cow:", ":ox:", ":water_buffalo:", 
+    ":pig:", ":boar:", ":pig_nose:", ":ram:", ":goat:", ":camel:", 
+    ":llama:", ":giraffe:", ":elephant:", ":mammoth:", ":rhinoceros:", ":hippopotamus:", ":mouse:", ":rat:", 
+    ":hamster:", ":rabbit:", ":chipmunk:", ":beaver:", ":hedgehog:", ":bat:", ":bear:", ":polar_bear:", 
+    ":koala:", ":sloth:", ":otter:", ":skunk:", ":kangaroo:", ":badger:", ":turkey:", ":chicken:", 
+    ":rooster:", ":hatching_chick:", ":baby_chick:", ":bird:", ":penguin:", ":dove:", ":eagle:", 
     ":duck:", ":swan:", ":owl:", ":flamingo:", ":peacock:", ":parrot:", ":whale:", ":dolphin:", ":seal:", 
-    ":fish:", ":tropical_fish:", ":blowfish:", ":shark:", ":octopus:", ":shell:", ":snail:", ":butterfly:", ":bug:", 
-    ":ant:", ":bee:", ":beetle:", ":lady_beetle:", ":cricket:", ":cockroach:", ":spider:", ":spider_web:", ":scorpion:", 
+    ":fish:", ":tropical_fish:", ":blowfish:", ":shark:", ":octopus:", ":snail:", ":butterfly:", ":bug:", 
+    ":ant:", ":beetle:", ":lady_beetle:", ":cricket:", ":cockroach:", ":spider:", ":spider_web:", ":scorpion:", 
     ":mosquito:", ":fly:", ":worm:", ":microbe:", ":turtle:", ":snake:", ":lizard:", ":crocodile:"
 ]
 
@@ -66,11 +66,13 @@ def run_telegram():
             else:
                 return
             
+            print(f"--- New message in telegram ---")
             if message.reply_to_message:
+                print(f"Reply to message:\n{message.reply_to_message.text}")
                 discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord_reply(message, discord_channel))
-                return
-            
-            discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord(message, discord_channel))
+            else:
+                print(f"New message:\n{message.text}")
+                discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord(message, discord_channel))
 
     print("Telegram-бот запущен")
     tg_bot.polling(none_stop=True, interval=0, long_polling_timeout=60)
@@ -149,10 +151,13 @@ async def on_message(message: Message):
         else:
             return
         
+        print(f"--- New message in discord ---")
         if message.reference and message.reference.message_id:
+            print(f"Reply to message:\n{message.reference.resolved.content}")
             await send_to_telegram_reply(message, telegram_channel)
-            return
-        await send_to_telegram(message, telegram_channel)
+        else:
+            print(f"New message:\n{message.content}")
+            await send_to_telegram(message, telegram_channel)
 
 async def send_to_telegram_reply(message, telegram_channel):
     user_data = get_discord_user_data(message)
