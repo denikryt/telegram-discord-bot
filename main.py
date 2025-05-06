@@ -75,7 +75,7 @@ def run_telegram():
                 discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord(message, discord_channel))
 
     print("Telegram-бот запущен")
-    tg_bot.polling(none_stop=True, interval=0, long_polling_timeout=60)
+    tg_bot.infinity_polling(long_polling_timeout=30)
 
 async def send_to_discord_reply(message, discord_channel):
     user_data = get_telegram_user_data(message)
