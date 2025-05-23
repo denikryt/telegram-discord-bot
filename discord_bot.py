@@ -119,7 +119,6 @@ async def send_to_telegram(message, telegram_channel, collection_name):
     from telegram_bot import tg_bot
 
     user_data = get_discord_user_data(message)
-    logger (f"User data: \n{json.dumps(user_data, indent=2, default=str)}")
 
     if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(telegram_channel), discord_channel_id=str(user_data['channel_id'])):
         avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
@@ -127,6 +126,7 @@ async def send_to_telegram(message, telegram_channel, collection_name):
     else:
         text = user_data['text']
 
+    logger(f"Sending message to Telegram channel: {telegram_channel}")
     tg_message = tg_bot.send_message(chat_id=telegram_channel, text=text, parse_mode='html')
     telegram_message_id = tg_message.message_id
 
