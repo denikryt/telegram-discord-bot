@@ -12,9 +12,7 @@ import datetime
 
 load_dotenv()
 
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN_TEST')
-
-tg_bot = telebot.TeleBot(TELEGRAM_TOKEN)
+tg_bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
 config.TELEGRAM_BOT_ID = tg_bot.get_me().id
 logging.info(f'Telegram bot ID: {config.TELEGRAM_BOT_ID}')
 

@@ -6,6 +6,9 @@ from pathlib import Path
 env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
 
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+
 TELEGRAM_CHANNEL_LAST_USER = {}
 DISCORD_CHANNEL_LAST_USER = {}
 

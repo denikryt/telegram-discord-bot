@@ -2,6 +2,7 @@ import asyncio
 import threading
 import os
 import logging
+import config
 from dotenv import load_dotenv
 from discord_bot import discord_client
 from telegram_bot import tg_bot, run_telegram, set_discord_loop
@@ -34,7 +35,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(rotating_handler)
 
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_TEST")
+DISCORD_TOKEN = config.DISCORD_TOKEN
 
 if __name__ == "__main__":
     discord_loop = asyncio.new_event_loop()
