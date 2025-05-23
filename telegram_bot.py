@@ -51,6 +51,9 @@ def handle_group_messages(message):
             logger(f"Error loading channels mapping: {e}")
             return
         
+        # Print the message data for debugging
+        logger(json.dumps(get_telegram_user_data(message), indent=2, default=str))
+
         # Get the Discord channel ID based on the Telegram channel ID
         discord_channel = str(channels_mapping.get(str(message.chat.id)))
         if not discord_channel:

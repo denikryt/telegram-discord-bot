@@ -46,6 +46,9 @@ async def on_message(message):
         logger(f"Error loading channels mapping: {e}")
         return
     
+    # Print the message data for debugging
+    logger(json.dumps(get_discord_user_data(message), indent=2, default=str))
+
     # Get the Telegram channel ID based on the Discord channel ID
     telegram_channel = channels_mapping.get(str(message.channel.id))
     if not telegram_channel:
