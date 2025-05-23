@@ -28,7 +28,13 @@ def set_discord_loop(loop):
 
 def run_telegram():
     logger("Telegram-бот запущен")
-    tg_bot.infinity_polling(long_polling_timeout=30)
+    while True:
+        try:
+            tg_bot.infinity_polling(long_polling_timeout=30, timeout=60)
+        except Exception as e:
+            logger(f"Ошибка в polling Telegram: {e}")
+            import time
+            time.sleep(5)
 
 # ------------------------
 # Telegram bot handlers
@@ -49,9 +55,6 @@ def handle_group_messages(message):
             logger(f"Error loading channels mapping: {e}")
             return
         
-        # Print the message data for debugging
-        logger(json.dumps(get_telegram_user_data(message), indent=2, default=str))
-
         # Get the Discord channel ID based on the Telegram channel ID
         discord_channel = str(channels_mapping.get(str(message.chat.id)))
         if not discord_channel:
@@ -65,6 +68,9 @@ def handle_group_messages(message):
             return
         
         logger(f'--- Message from Telegram ---')
+        # Print the message data for debugging
+        logger(json.dumps(get_telegram_user_data(message), indent=2, default=str))
+
         # Send the message to Discord
         if message.reply_to_message:
             logger(f"Reply to message:\n{message.reply_to_message.text}")

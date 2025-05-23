@@ -46,9 +46,6 @@ async def on_message(message):
         logger(f"Error loading channels mapping: {e}")
         return
     
-    # Print the message data for debugging
-    logger(json.dumps(get_discord_user_data(message), indent=2, default=str))
-
     # Get the Telegram channel ID based on the Discord channel ID
     telegram_channel = channels_mapping.get(str(message.channel.id))
     if not telegram_channel:
@@ -62,9 +59,12 @@ async def on_message(message):
         return
 
     logger(f"--- Message from Discord ---")
+    # Print the message data for debugging
+    logger(json.dumps(get_discord_user_data(message), indent=2, default=str))
+
     # Send the message to Telegram
     if message.reference and message.reference.message_id:
-        logger(f"Reply to message:\n{message.reference.resolved.content}")
+        logger(f"Reply to message:\n{message.content}")
         
         update_last_message_user_id()
         await send_to_telegram_reply(message, telegram_channel, collection_name)
@@ -127,7 +127,7 @@ async def send_to_telegram(message, telegram_channel, collection_name):
         text = user_data['text']
 
     logger(f"Sending message to Telegram channel: {telegram_channel}")
-    tg_message = tg_bot.send_message(chat_id=telegram_channel, text=text, parse_mode='html')
+    tg_message = tg_bot.send_message(chat_id=int(telegram_channel), text=text, parse_mode='html')
     telegram_message_id = tg_message.message_id
 
     db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id, collection_name=collection_name)
