@@ -93,7 +93,7 @@ async def send_to_discord_reply(message, discord_channel, collection_name):
             update_last_message_user_id()
             if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
                 avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
-                text = f"{avatar_emoji}**_{user_data['user_name']}_**\n{user_data['text']}"
+                text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['text']}"
             else:
                 text = user_data['text']
 
@@ -118,7 +118,7 @@ async def send_to_discord(message, discord_channel, collection_name):
         update_last_message_user_id()
         if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
             avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
-            text = f"{avatar_emoji}**_{user_data['user_name']}_**\n{user_data['text']}"
+            text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['text']}"
         else:
             text = user_data['text']
 
