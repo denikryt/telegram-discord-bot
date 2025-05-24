@@ -32,7 +32,7 @@ def run_telegram():
         try:
             tg_bot.infinity_polling(long_polling_timeout=30, timeout=60)
         except Exception as e:
-            logger(f"Ошибка в polling Telegram: {e}")
+            logger(f"Ошибка в polling Telegram: \n{e}")
             import time
             time.sleep(5)
 
@@ -58,27 +58,25 @@ def handle_group_messages(message):
         # Get the Discord channel ID based on the Telegram channel ID
         discord_channel = str(channels_mapping.get(str(message.chat.id)))
         if not discord_channel:
-            logger(f"Discord channel not found for Telegram channel {message.chat.id}")
+            logger(f"Discord channel not found for Telegram channel {message.chat.id} named {message.chat.title}")
             return
 
         # Get the collection name based on the Telegram channel ID
         collection_name = get_collection_name(str(message.chat.id))
         if not collection_name:
-            logger(f"Collection not found for Telegram channel {message.chat.id}")
+            logger(f"Collection not found for Telegram channel {message.chat.id} named {message.chat.title}")
             return
-        
-        
+
         logger(f'--- Message from Telegram ---')
-        logger(f"Collection name: {collection_name}")
         # Print the message data for debugging
-        logger(json.dumps(get_telegram_user_data(message), indent=2, default=str))
+        logger(json.dumps(get_telegram_user_data(message), indent=2, ensure_ascii=False, default=str))
 
         # Send the message to Discord
         if message.reply_to_message:
-            logger(f"Reply to message:\n{message.text}")
+            logger(f"--- Reply to message")
             discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord_reply(message, discord_channel, collection_name))
         else:
-            logger(f"New message:\n{message.text}")
+            logger(f"--- New message")
             discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord(message, discord_channel, collection_name))
 
 # ------------------------
@@ -140,8 +138,6 @@ async def send_to_discord(message, discord_channel, collection_name):
         else:
             text = user_data['text']
 
-        # logger(f"User data:\n{json.dumps(user_data, indent=2, default=str)}")
-
         set_last_message_user_id(user_name=user_data['user_name'], user_id=str(user_data['user_id']), channel_id=str(user_data['channel_id']))
 
         discord_message = await channel.send(text)
@@ -157,13 +153,15 @@ def get_telegram_user_data(message):
         message_id = message.message_id
         text = message.text
         channel_id = message.chat.id
+        channel_name = message.chat.title
 
     return {
         'user_name': user_name, 
         'user_id': user_id,
         'message_id': message_id,
         'text': text,
-        'channel_id': channel_id
+        'channel_id': channel_id,
+        'channel_name': channel_name
     }
 
 def load_channels_mapping():

@@ -33,7 +33,7 @@ async def on_message(message):
     user_data = get_discord_user_data(message)
 
     if message.author == discord_client.user:
-        logger('--- Message from bot')
+        logger('--- Message from discord bot')
         update_last_message_user_id()
         set_last_message_user_id(user_id=str(user_data['user_id']), channel_id=str(user_data['channel_id']))
 
