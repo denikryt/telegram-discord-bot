@@ -59,6 +59,7 @@ async def on_message(message):
         return
 
     logger(f"--- Message from Discord ---")
+    logger(f"Collection name: {collection_name}")
     # Print the message data for debugging
     logger(json.dumps(get_discord_user_data(message), indent=2, default=str))
 
@@ -89,6 +90,7 @@ def set_telegram_last_user_id(user_id:str, channel_id:str):
     # --- loggering for debugging ---
     logger(f'Telegram Last message user ID set: {user_id} for channel: {channel_id}')
     logger(f'Telegram Last message user ID dict: \n{json.dumps(config.TELEGRAM_CHANNEL_LAST_USER, indent=2, default=str)}')
+    logger('-----------------------')
 
 async def send_to_telegram_reply(message, telegram_channel, collection_name):
     logger(f"--- Sending reply message to Telegram ---")
@@ -110,7 +112,6 @@ async def send_to_telegram_reply(message, telegram_channel, collection_name):
         telegram_message_id = tg_message.message_id
 
         db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id, collection_name=collection_name)
-        logger('-----------------------')
     else:
         await send_to_telegram(message, telegram_channel, collection_name)
 
@@ -131,7 +132,6 @@ async def send_to_telegram(message, telegram_channel, collection_name):
     telegram_message_id = tg_message.message_id
 
     db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id, collection_name=collection_name)
-    logger('-----------------------')
 
 # ------------------------
 # Helper functions

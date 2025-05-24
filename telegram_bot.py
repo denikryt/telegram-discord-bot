@@ -67,13 +67,15 @@ def handle_group_messages(message):
             logger(f"Collection not found for Telegram channel {message.chat.id}")
             return
         
+        
         logger(f'--- Message from Telegram ---')
+        logger(f"Collection name: {collection_name}")
         # Print the message data for debugging
         logger(json.dumps(get_telegram_user_data(message), indent=2, default=str))
 
         # Send the message to Discord
         if message.reply_to_message:
-            logger(f"Reply to message:\n{message.reply_to_message.text}")
+            logger(f"Reply to message:\n{message.text}")
             discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord_reply(message, discord_channel, collection_name))
         else:
             logger(f"New message:\n{message.text}")
@@ -89,28 +91,37 @@ async def send_to_discord_reply(message, discord_channel, collection_name):
 
     user_data = get_telegram_user_data(message)
     reply_to_message_id = message.reply_to_message.message_id
+    logger(f"Reply to message ID: {reply_to_message_id}")
 
     original_discord_message_id = db.get_discord_message_id(telegram_message_id=reply_to_message_id, collection_name=collection_name)
+    logger(f"Original Discord message ID: {original_discord_message_id}")
 
     if original_discord_message_id:
         channel = await discord_client.fetch_channel(discord_channel)
-        original_discord_message = await channel.fetch_message(original_discord_message_id)
+        logger(f"Discord channel fetched: {channel.id}")
+        
+        try:
+            original_discord_message = await channel.fetch_message(original_discord_message_id)
+            logger(f"Original Discord message fetched: {original_discord_message.id}")
+        
+            if original_discord_message:
+                update_last_message_user_id()
+                if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
+                    avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
+                    text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['text']}"
+                else:
+                    text = user_data['text']
 
-        if original_discord_message:
-            update_last_message_user_id()
-            if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
-                avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
-                text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['text']}"
-            else:
-                text = user_data['text']
+                set_last_message_user_id(user_name=user_data['user_name'], user_id=str(user_data['user_id']), channel_id=str(user_data['channel_id']))
 
-            set_last_message_user_id(user_name=user_data['user_name'], user_id=str(user_data['user_id']), channel_id=str(user_data['channel_id']))
+                discord_message = await original_discord_message.reply(text)
+                discord_message_id = discord_message.id
 
-            discord_message = await original_discord_message.reply(text)
-            discord_message_id = discord_message.id
+                db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id, collection_name=collection_name)
+                logger('-----------------------')
 
-            db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id, collection_name=collection_name)
-            logger('-----------------------')
+        except Exception as e:
+            logger(f"Error fetching original Discord message: {e}")
     else:
         await send_to_discord(message, discord_channel, collection_name)
 
