@@ -44,7 +44,7 @@ def run_telegram():
 
 @tg_bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    text = "Привіт! Я пересилаю повідомлення між Discord сервером Hacklab'а та Telegram.\nДоєднуйся до сервера Hacklab: https://discord.com/invite/sgCQBWpAm8"
+    text = config.WELCOME_MESSAGE
     tg_bot.reply_to(message, text)
     logging.info(f"Sent welcome message to Telegram user {message.from_user.first_name}")
 
@@ -163,7 +163,7 @@ def handle_sticker(message):
                     send_media_to_discord(message, discord_channel, collection_name, media_files))
         else:
             logger("-- No media files to send")
-            
+
 # ------------------------
 # Functions to send messages to Discord
 # ------------------------
@@ -191,7 +191,7 @@ async def send_message_to_discord_reply(message, discord_channel, collection_nam
                 update_last_message_user_id()
                 if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
                     avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
-                    text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['text']}"
+                    text = f"{avatar_emoji} **{user_data['user_name']}**\n{user_data['text']}"
                 else:
                     text = user_data['text']
 
@@ -219,7 +219,7 @@ async def send_message_to_discord(message, discord_channel, collection_name):
         update_last_message_user_id()
         if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
             avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
-            text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['text']}"
+            text = f"{avatar_emoji} **{user_data['user_name']}**\n{user_data['text']}"
         else:
             text = user_data['text']
 
@@ -248,9 +248,9 @@ async def send_media_to_discord(message, discord_channel, collection_name, media
         if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
             avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
             if user_data['caption']:
-                text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['caption']}"
+                text = f"{avatar_emoji} **{user_data['user_name']}**\n{user_data['caption']}"
             else:
-                text = f"{avatar_emoji}**{user_data['user_name']}**"
+                text = f"{avatar_emoji} **{user_data['user_name']}**"
         else:
             text = user_data['caption']
 
@@ -289,9 +289,9 @@ async def send_media_to_discord_reply(message, discord_channel, collection_name,
                 if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
                     avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
                     if user_data['caption']:
-                        text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['caption']}"
+                        text = f"{avatar_emoji} **{user_data['user_name']}**\n{user_data['caption']}"
                     else:
-                        text = f"{avatar_emoji}**{user_data['user_name']}**"
+                        text = f"{avatar_emoji} **{user_data['user_name']}**"
                 else:
                     text = user_data['caption']
 
