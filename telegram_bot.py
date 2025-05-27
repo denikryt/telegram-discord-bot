@@ -9,6 +9,8 @@ import db
 import json
 import config
 import datetime
+import telegram_media
+import discord
 
 load_dotenv()
 
@@ -42,48 +44,131 @@ def run_telegram():
 
 @tg_bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    tg_bot.reply_to(message, "Привет! Я Telegram-бот.")
+    text = "Привіт! Я пересилаю повідомлення між Discord сервером Hacklab'а та Telegram.\nДоєднуйся до сервера Hacklab: https://discord.com/invite/sgCQBWpAm8"
+    tg_bot.reply_to(message, text)
     logging.info(f"Sent welcome message to Telegram user {message.from_user.first_name}")
 
-@tg_bot.message_handler(func=lambda message: True)
-def handle_group_messages(message):
-    if message.chat.type in ['group', 'supergroup']:
-        # Load the channels mapping from the JSON file
+@tg_bot.message_handler(content_types=['text'])
+def handle_text_from_group(message):
+    if message.chat.type not in ['group', 'supergroup']:
+        return
+    try:
+        discord_channel, collection_name = get_discord_channel_and_collection(message)
+    except Exception as e:
+        logger('Error while extracting Discord channel and collection name')
+        return
+    
+    logger(f'--- Message from Telegram ---')
+    logger(json.dumps(get_telegram_user_data(message), indent=2, ensure_ascii=False, default=str))
+   
+    if message.reply_to_message:
+        discord_loop.call_soon_threadsafe(
+            asyncio.create_task, 
+            send_message_to_discord_reply(message, discord_channel, collection_name))
+    else:
+        discord_loop.call_soon_threadsafe(
+            asyncio.create_task, 
+            send_message_to_discord(message, discord_channel, collection_name, media_files=None))
+
+@tg_bot.message_handler(content_types=['photo', 'video', 'document', 'audio', 'voice'])
+def handle_media_from_group(message):
+    if message.chat.type not in ['group', 'supergroup']:
+        return
+    try:
+        discord_channel, collection_name = get_discord_channel_and_collection(message)
+    except Exception as e:
+        logger('Error while extracting Discord channel and collection name')
+        return
+    
+    logger(f'--- Message with media from Telegram ---')
+    logger(json.dumps(get_telegram_user_data(message), indent=2, ensure_ascii=False, default=str))
+
+    try:
+        media_files = telegram_media.get_media_files(message, tg_bot)
+    except ValueError as e:
+        logger(f"Error while extracting media files: {e}")
+
+        message.text = 'Error download media files from Telegram'
+        discord_loop.call_soon_threadsafe(
+            asyncio.create_task, 
+            send_message_to_discord(message, discord_channel, collection_name))
+        return
+
+    if media_files:
+        if message.reply_to_message:
+            logger("-- Message with reply")
+            discord_loop.call_soon_threadsafe(
+            asyncio.create_task,
+            send_media_to_discord_reply(message, discord_channel, collection_name, media_files))
+        else:
+            logger("-- Message without reply")
+            discord_loop.call_soon_threadsafe(
+                asyncio.create_task,
+                send_media_to_discord(message, discord_channel, collection_name, media_files))
+    else:
+        logger("-- No media files to send")
+
+@tg_bot.message_handler(content_types=['sticker'])
+def handle_sticker(message):
+    if message.chat.type not in ['group', 'supergroup']:
+        return
+    try:
+        discord_channel, collection_name = get_discord_channel_and_collection(message)
+    except Exception as e:
+        logger('Error while extracting Discord channel and collection name')
+        return
+    
+    logger(f'--- Sticker from Telegram ---')
+    logger(json.dumps(get_telegram_user_data(message), indent=2, ensure_ascii=False, default=str))
+    
+    sticker = message.sticker
+    if sticker.is_animated:
+        logger("-- This is animated sticker")
+
+        message.text = 'There is an animated sticker in telegram message'
+
+        discord_loop.call_soon_threadsafe(
+            asyncio.create_task, 
+            send_message_to_discord(message, discord_channel, collection_name, media_files=None))
+        return
+
+    elif sticker.is_video:
+        logger("-- This is video sticker (.webm)")
+
+        message.text = 'There is an animated sticker in telegram message'
+
+        discord_loop.call_soon_threadsafe(
+            asyncio.create_task, 
+            send_message_to_discord(message, discord_channel, collection_name, media_files=None))
+        return
+    
+    else:
+        logger("-- This is regular static sticker (.webp)")
         try:
-            channels_mapping = load_channels_mapping()
-        except Exception as e:
-            logger(f"Error loading channels mapping: {e}")
+            media_files = telegram_media.get_media_files(message, tg_bot)
+        except ValueError as e:
+            logger(f"Error while extracting media files: {e}")
             return
         
-        # Get the Discord channel ID based on the Telegram channel ID
-        discord_channel = str(channels_mapping.get(str(message.chat.id)))
-        if not discord_channel:
-            logger(f"Discord channel not found for Telegram channel {message.chat.id} named {message.chat.title}")
-            return
-
-        # Get the collection name based on the Telegram channel ID
-        collection_name = get_collection_name(str(message.chat.id))
-        if not collection_name:
-            logger(f"Collection not found for Telegram channel {message.chat.id} named {message.chat.title}")
-            return
-
-        logger(f'--- Message from Telegram ---')
-        # Print the message data for debugging
-        logger(json.dumps(get_telegram_user_data(message), indent=2, ensure_ascii=False, default=str))
-
-        # Send the message to Discord
-        if message.reply_to_message:
-            logger(f"--- Reply to message")
-            discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord_reply(message, discord_channel, collection_name))
+        if media_files:
+            if message.reply_to_message:
+                logger("-- Message with reply")
+                discord_loop.call_soon_threadsafe(
+                asyncio.create_task,
+                send_media_to_discord_reply(message, discord_channel, collection_name, media_files))
+            else:
+                logger("-- Message without reply")
+                discord_loop.call_soon_threadsafe(
+                    asyncio.create_task,
+                    send_media_to_discord(message, discord_channel, collection_name, media_files))
         else:
-            logger(f"--- New message")
-            discord_loop.call_soon_threadsafe(asyncio.create_task, send_to_discord(message, discord_channel, collection_name))
-
+            logger("-- No media files to send")
+            
 # ------------------------
-# Helper functions
+# Functions to send messages to Discord
 # ------------------------
 
-async def send_to_discord_reply(message, discord_channel, collection_name):
+async def send_message_to_discord_reply(message, discord_channel, collection_name):
     logger(f"--- Sending reply message to Discord ---")
     from discord_bot import discord_client
 
@@ -121,9 +206,9 @@ async def send_to_discord_reply(message, discord_channel, collection_name):
         except Exception as e:
             logger(f"Error fetching original Discord message: {e}")
     else:
-        await send_to_discord(message, discord_channel, collection_name)
+        await send_message_to_discord(message, discord_channel, collection_name)
 
-async def send_to_discord(message, discord_channel, collection_name):
+async def send_message_to_discord(message, discord_channel, collection_name):
     logger(f"--- Sending message to Discord ---")
     from discord_bot import discord_client
     
@@ -146,6 +231,119 @@ async def send_to_discord(message, discord_channel, collection_name):
         db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id, collection_name=collection_name)
         logger('-----------------------')
 
+# ------------------------
+# Functions to send media files to Discord
+# ------------------------
+
+async def send_media_to_discord(message, discord_channel, collection_name, media_files=None):
+    logger(f"--- Sending media to Discord ---")
+    from discord_bot import discord_client
+
+    user_data = get_telegram_user_data(message)
+    channel = await discord_client.fetch_channel(discord_channel)
+    files = get_files(media_files)
+
+    if channel:
+        update_last_message_user_id()
+        if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
+            avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
+            if user_data['caption']:
+                text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['caption']}"
+            else:
+                text = f"{avatar_emoji}**{user_data['user_name']}**"
+        else:
+            text = user_data['caption']
+
+        set_last_message_user_id(user_name=user_data['user_name'], user_id=str(user_data['user_id']), channel_id=str(user_data['channel_id']))
+
+        discord_message = await channel.send(content=text, files=files)
+        discord_message_id = discord_message.id
+
+        telegram_media.clean_media_files(media_files)
+        db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id, collection_name=collection_name)
+        logger('-----------------------')
+
+async def send_media_to_discord_reply(message, discord_channel, collection_name, media_files=None):
+    logger(f"--- Sending reply message to Discord ---")
+    from discord_bot import discord_client
+
+    user_data = get_telegram_user_data(message)
+    reply_to_message_id = message.reply_to_message.message_id
+    logger(f"Reply to message ID: {reply_to_message_id}")
+
+    original_discord_message_id = db.get_discord_message_id(telegram_message_id=reply_to_message_id, collection_name=collection_name)
+    logger(f"Original Discord message ID: {original_discord_message_id}")
+    
+    files = get_files(media_files)
+
+    if original_discord_message_id:
+        channel = await discord_client.fetch_channel(discord_channel)
+        logger(f"Discord channel fetched: {channel.id}")
+        
+        try:
+            original_discord_message = await channel.fetch_message(original_discord_message_id)
+            logger(f"Original Discord message fetched: {original_discord_message.id}")
+        
+            if original_discord_message:
+                update_last_message_user_id()
+                if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(user_data['channel_id']), discord_channel_id=discord_channel):
+                    avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
+                    if user_data['caption']:
+                        text = f"{avatar_emoji}**{user_data['user_name']}**\n{user_data['caption']}"
+                    else:
+                        text = f"{avatar_emoji}**{user_data['user_name']}**"
+                else:
+                    text = user_data['caption']
+
+                set_last_message_user_id(user_name=user_data['user_name'], user_id=str(user_data['user_id']), channel_id=str(user_data['channel_id']))
+
+                discord_message = await original_discord_message.reply(content=text, files=files)
+                discord_message_id = discord_message.id
+
+                telegram_media.clean_media_files(media_files)
+                db.save_message_to_db(telegram_message_id=user_data['message_id'], discord_message_id=discord_message_id, collection_name=collection_name)
+                logger('-----------------------')
+
+        except Exception as e:
+            logger(f"Error fetching original Discord message: {e}")
+    else:
+        await send_media_to_discord(message, discord_channel, collection_name, media_files=media_files)
+
+# ------------------------
+
+def get_files(media_files):
+    if media_files:
+        files = []
+        for file_path in media_files:
+            try:
+                files.append(discord.File(file_path))
+            except Exception as e:
+                print(f"Failed to attach file {file_path}: {e}")
+        return files
+    else:
+        return None
+
+def get_discord_channel_and_collection(message):
+    try:
+        channels_mapping = load_channels_mapping()
+    except Exception as e:
+        logger(f"Error loading channels mapping: {e}")
+        raise
+
+    discord_channel = str(channels_mapping.get(str(message.chat.id)))
+    if not discord_channel:
+        error_msg = f"Discord channel not found for Telegram channel {message.chat.id} named {message.chat.title}"
+        logger(error_msg)
+        raise ValueError(error_msg)
+
+    collection_name = get_collection_name(str(message.chat.id))
+    if not collection_name:
+        error_msg = f"Collection not found for Telegram channel {message.chat.id} named {message.chat.title}"
+        logger(error_msg)
+        raise ValueError(error_msg)
+
+    return discord_channel, collection_name
+
 def get_telegram_user_data(message):
     if message:
         user_name = message.from_user.first_name
@@ -154,6 +352,7 @@ def get_telegram_user_data(message):
         text = message.text
         channel_id = message.chat.id
         channel_name = message.chat.title
+        caption = message.caption
 
     return {
         'user_name': user_name, 
@@ -161,7 +360,8 @@ def get_telegram_user_data(message):
         'message_id': message_id,
         'text': text,
         'channel_id': channel_id,
-        'channel_name': channel_name
+        'channel_name': channel_name,
+        'caption': caption
     }
 
 def load_channels_mapping():

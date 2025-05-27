@@ -6,8 +6,8 @@ from pathlib import Path
 env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN_TEST")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_TEST")
 
 TELEGRAM_CHANNEL_LAST_USER = {}
 DISCORD_CHANNEL_LAST_USER = {}
@@ -29,3 +29,5 @@ AVATAR_EMOJIS = [
     ":ant:", ":beetle:", ":lady_beetle:", ":cricket:", ":cockroach:", ":spider:", ":spider_web:", ":scorpion:", 
     ":mosquito:", ":fly:", ":worm:", ":microbe:", ":turtle:", ":snake:", ":lizard:", ":crocodile:"
 ]
+
+FFMPEG_PATH = os.getenv("FFMPEG_PATH")
