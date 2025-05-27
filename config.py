@@ -31,3 +31,4 @@ AVATAR_EMOJIS = [
 ]
 
 FFMPEG_PATH = os.getenv("FFMPEG_PATH")
+WELCOME_MESSAGE = "Привіт! Я пересилаю повідомлення між Discord сервером Hacklab'а та Telegram.\nДоєднуйся до сервера Hacklab: https://discord.com/invite/sgCQBWpAm8"
