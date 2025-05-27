@@ -21,7 +21,7 @@ logging.info(f'Telegram bot ID: {config.TELEGRAM_BOT_ID}')
 discord_loop = None
 
 # ------------------------
-# Global variables and polling
+# Global discord_loop variable initialization and polling
 # ------------------------
 
 def set_discord_loop(loop):
@@ -96,12 +96,10 @@ def handle_media_from_group(message):
 
     if media_files:
         if message.reply_to_message:
-            logger("-- Message with reply")
             discord_loop.call_soon_threadsafe(
             asyncio.create_task,
             send_media_to_discord_reply(message, discord_channel, collection_name, media_files))
         else:
-            logger("-- Message without reply")
             discord_loop.call_soon_threadsafe(
                 asyncio.create_task,
                 send_media_to_discord(message, discord_channel, collection_name, media_files))
@@ -152,12 +150,10 @@ def handle_sticker(message):
         
         if media_files:
             if message.reply_to_message:
-                logger("-- Message with reply")
                 discord_loop.call_soon_threadsafe(
                 asyncio.create_task,
                 send_media_to_discord_reply(message, discord_channel, collection_name, media_files))
             else:
-                logger("-- Message without reply")
                 discord_loop.call_soon_threadsafe(
                     asyncio.create_task,
                     send_media_to_discord(message, discord_channel, collection_name, media_files))
@@ -236,7 +232,7 @@ async def send_message_to_discord(message, discord_channel, collection_name):
 # ------------------------
 
 async def send_media_to_discord(message, discord_channel, collection_name, media_files=None):
-    logger(f"--- Sending media to Discord ---")
+    logger(f"--- Sending message with media to Discord ---")
     from discord_bot import discord_client
 
     user_data = get_telegram_user_data(message)
@@ -264,7 +260,7 @@ async def send_media_to_discord(message, discord_channel, collection_name, media
         logger('-----------------------')
 
 async def send_media_to_discord_reply(message, discord_channel, collection_name, media_files=None):
-    logger(f"--- Sending reply message to Discord ---")
+    logger(f"--- Sending reply message with media to Discord ---")
     from discord_bot import discord_client
 
     user_data = get_telegram_user_data(message)
