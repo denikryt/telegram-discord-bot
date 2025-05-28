@@ -14,7 +14,7 @@ import datetime
 import logging
 from io import BytesIO
 import telebot
-from telebot.types import InputFile
+# from telebot.types import InputFile
 from PIL import Image
 import pillow_heif
 import io
@@ -190,7 +190,7 @@ async def process_attachment(attachment, text, telegram_channel, reply_to=None):
     file_bytes = await attachment.read()
     file_name = attachment.filename
     content_type = attachment.content_type or ''
-    tg_file = InputFile(BytesIO(file_bytes))
+    tg_file = telebot.types.InputFile(BytesIO(file_bytes))
 
     try:
         if file_name.lower().endswith(".heic"):
