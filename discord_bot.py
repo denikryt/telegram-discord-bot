@@ -190,7 +190,12 @@ async def process_attachment(attachment, text, telegram_channel, reply_to=None):
     file_bytes = await attachment.read()
     file_name = attachment.filename
     content_type = attachment.content_type or ''
-    tg_file = telebot.types.InputFile(BytesIO(file_bytes))
+    
+    try:
+        tg_file = telebot.types.InputFile(BytesIO(file_bytes))
+    except Exception as e:
+        logger(f'Error creating InputFile for {file_name}: {e}')
+        return None
 
     try:
         if file_name.lower().endswith(".heic"):
