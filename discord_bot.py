@@ -1,6 +1,7 @@
 import threading
+import time
 import discord
-from discord import Intents, Client
+from discord import Intents, Client, Message, MessageType
 from discord.ext import commands
 import os
 import db
@@ -11,6 +12,12 @@ import config
 import json
 import datetime
 import logging
+from io import BytesIO
+import telebot
+from telebot.types import InputFile
+from PIL import Image
+import pillow_heif
+import io
 
 intents = Intents.default()
 intents.message_content = True
@@ -57,23 +64,19 @@ async def on_message(message):
     if not collection_name:
         logger(f"Collection name not found for channel ID: {telegram_channel}")
         return
-
+        
     logger(f"--- Message from Discord ---")
     logger(f"Collection name: {collection_name}")
     # Print the message data for debugging
     logger(json.dumps(get_discord_user_data(message), indent=2, default=str))
 
     # Send the message to Telegram
-    if message.reference and message.reference.message_id:
-        logger(f"Reply to message:\n{message.content}")
-        
+    if message.reference and message.reference.message_id:        
         update_last_message_user_id()
         await send_to_telegram_reply(message, telegram_channel, collection_name)
         set_last_message_user_id(user_id=str(user_data['user_id']), channel_id=str(user_data['channel_id']))
         set_telegram_last_user_id(user_id=str(config.TELEGRAM_BOT_ID), channel_id=str(telegram_channel))
-    else:
-        logger(f"New message:\n{message.content}")
-        
+    else:        
         update_last_message_user_id()
         await send_to_telegram(message, telegram_channel, collection_name)
         set_last_message_user_id(user_id=str(user_data['user_id']), channel_id=str(user_data['channel_id']))
@@ -81,6 +84,93 @@ async def on_message(message):
 
 # ------------------------
 # Functions to send messages to Telegram
+# ------------------------
+
+async def send_to_telegram_reply(message: Message, telegram_channel, collection_name):
+    logger(f"--- Sending reply message to Telegram ---")
+    from telegram_bot import tg_bot
+
+    user_data = get_discord_user_data(message)
+    reply_to_message_id = message.reference.message_id
+    original_telegram_message_id = db.get_telegram_message_id(
+        discord_message_id=reply_to_message_id,
+        collection_name=collection_name
+    )
+
+    if not original_telegram_message_id:
+        await send_to_telegram(message, telegram_channel, collection_name)
+        return
+
+    text = get_caption(user_data, telegram_channel)
+    logger(f'Text for reply: {text}')
+
+    logger(f'message.attachments: {message.attachments}')
+
+    try:
+        if message.attachments:
+            logger(f'--- Reply message has {len(message.attachments)} attachments ---')
+            for attachment in message.attachments:
+                tg_message = await process_attachment(attachment, text, telegram_channel, reply_to=original_telegram_message_id)
+                if tg_message:
+                    db.save_message_to_db(
+                        discord_message_id=user_data['message_id'],
+                        telegram_message_id=tg_message.message_id,
+                        collection_name=collection_name
+                    )
+                    time.sleep(1)
+                else:
+                    fallback_text = f'{text}\n<code>Failed to send attachment: {attachment.filename}</code>'
+                    tg_bot.send_message(
+                        chat_id=telegram_channel,
+                        text=fallback_text,
+                        parse_mode='html',
+                        reply_to_message_id=original_telegram_message_id
+                    )
+        else:
+            tg_message = tg_bot.send_message(
+                chat_id=telegram_channel,
+                text=text,
+                parse_mode='html',
+                reply_to_message_id=original_telegram_message_id
+            )
+            db.save_message_to_db(
+                discord_message_id=user_data['message_id'],
+                telegram_message_id=tg_message.message_id,
+                collection_name=collection_name
+            )
+    except Exception as e:
+        logger(f'Error sending reply message: {e}')
+
+async def send_to_telegram(message, telegram_channel, collection_name):
+    logger("--- Sending message to Telegram ---")
+    from telegram_bot import tg_bot
+
+    user_data = get_discord_user_data(message)
+    text = get_caption(user_data, telegram_channel)
+
+    if message.attachments:
+        logger(f'--- Message has {len(message.attachments)} attachments')
+        for attachment in message.attachments:
+            tg_message = await process_attachment(attachment, text, telegram_channel)
+            if tg_message:
+                db.save_message_to_db(
+                    discord_message_id=user_data['message_id'],
+                    telegram_message_id=tg_message.message_id,
+                    collection_name=collection_name
+                )
+                time.sleep(1)
+            else:
+                fallback_text = f'{text}\n<code>Failed to send attachment: {attachment.filename}</code>'
+                tg_bot.send_message(chat_id=int(telegram_channel), text=fallback_text, parse_mode='html')
+    else:
+        tg_message = tg_bot.send_message(chat_id=int(telegram_channel), text=text, parse_mode='html')
+        db.save_message_to_db(
+            discord_message_id=user_data['message_id'],
+            telegram_message_id=tg_message.message_id,
+            collection_name=collection_name
+        )
+# ------------------------
+# Helper functions
 # ------------------------
 
 def set_telegram_last_user_id(user_id:str, channel_id:str):
@@ -92,50 +182,59 @@ def set_telegram_last_user_id(user_id:str, channel_id:str):
     logger(f'Telegram Last message user ID dict: \n{json.dumps(config.TELEGRAM_CHANNEL_LAST_USER, indent=2, default=str)}')
     logger('-----------------------')
 
-async def send_to_telegram_reply(message, telegram_channel, collection_name):
-    logger(f"--- Sending reply message to Telegram ---")
+
+async def process_attachment(attachment, text, telegram_channel, reply_to=None):
+    logger(f'-- Processing attachment: {attachment.filename} ({attachment.content_type})')
     from telegram_bot import tg_bot
-    
-    user_data = get_discord_user_data(message)
-    reply_to_message_id = message.reference.message_id
-    original_telegram_message_id = db.get_telegram_message_id(discord_message_id=reply_to_message_id, collection_name=collection_name)
 
-    if original_telegram_message_id:
+    file_bytes = await attachment.read()
+    file_name = attachment.filename
+    content_type = attachment.content_type or ''
+    tg_file = InputFile(BytesIO(file_bytes))
 
-        if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(telegram_channel), discord_channel_id=str(user_data['channel_id'])):
-            avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
-            text = f"{avatar_emoji}<b>{user_data['user_name']}</b>\n{user_data['text']}"
+    try:
+        if file_name.lower().endswith(".heic"):
+            tg_file = await convert_heic_to_jpeg(file_bytes)
+    except Exception as e:
+        logger(f'Error preparing file {file_name}: {e}')
+        return None
+
+    try:
+        if content_type.startswith("image/"):
+            logger(f'-- Sending image: {file_name}')
+            return tg_bot.send_photo(chat_id=int(telegram_channel), photo=tg_file, caption=text, parse_mode='html', reply_to_message_id=reply_to)
+        elif content_type.startswith("video/"):
+            logger(f'-- Sending video: {file_name}')
+            return tg_bot.send_video(chat_id=int(telegram_channel), video=tg_file, caption=text, parse_mode='html', reply_to_message_id=reply_to)
         else:
-            text = user_data['text']
+            logger(f'-- Sending document: {file_name}')
+            return tg_bot.send_document(chat_id=int(telegram_channel), document=tg_file, caption=text, parse_mode='html', reply_to_message_id=reply_to)
+    except Exception as e:
+        logger(f'Error sending file {file_name}: {e}')
+        return None
 
-        tg_message = tg_bot.send_message(chat_id=telegram_channel, text=text, parse_mode='html', reply_to_message_id=original_telegram_message_id)
-        telegram_message_id = tg_message.message_id
-
-        db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id, collection_name=collection_name)
-    else:
-        await send_to_telegram(message, telegram_channel, collection_name)
-
-async def send_to_telegram(message, telegram_channel, collection_name):
-    logger(f"--- Sending message to Telegram ---")
-    from telegram_bot import tg_bot
-
-    user_data = get_discord_user_data(message)
-
-    if not check_last_message_user_id(current_user_id=str(user_data['user_id']), telegram_channel_id=str(telegram_channel), discord_channel_id=str(user_data['channel_id'])):
+def get_caption(user_data, telegram_channel):
+    if not check_last_message_user_id(
+        current_user_id=str(user_data['user_id']),
+        telegram_channel_id=str(telegram_channel),
+        discord_channel_id=str(user_data['channel_id'])
+    ):
         avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
-        text = f"{avatar_emoji}<b>{user_data['user_name']}</b>\n{user_data['text']}"
-    else:
-        text = user_data['text']
+        return f"{avatar_emoji}<b>{user_data['user_name']}</b>\n{user_data['text']}"
+    return user_data['text']
 
-    logger(f"Sending message to Telegram channel: {telegram_channel}")
-    tg_message = tg_bot.send_message(chat_id=int(telegram_channel), text=text, parse_mode='html')
-    telegram_message_id = tg_message.message_id
-
-    db.save_message_to_db(discord_message_id=user_data['message_id'], telegram_message_id=telegram_message_id, collection_name=collection_name)
-
-# ------------------------
-# Helper functions
-# ------------------------
+async def convert_heic_to_jpeg(file_bytes: bytes) -> BytesIO:
+    heif_file = pillow_heif.read_heif(file_bytes)
+    image = Image.frombytes(
+        heif_file.mode, 
+        heif_file.size, 
+        heif_file.data,
+        "raw"
+    )
+    output = BytesIO()
+    image.save(output, format='JPEG')
+    output.seek(0)
+    return output
 
 def get_discord_user_data(message):
     if message:

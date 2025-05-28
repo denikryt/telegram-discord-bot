@@ -57,10 +57,10 @@ def get_telegram_message_id(discord_message_id, collection_name):
     messages_collection = db[collection_name]
     result = messages_collection.find_one({"discord_message_id": discord_message_id})
     if result:
-        logger("Telegram message ID have been found for this Discord message ID")
+        logger(f"Telegram message ID {result['telegram_message_id']} have been found for this Discord message ID {discord_message_id}")
         return result['telegram_message_id']
     else:
-        logger("Telegram message ID not found for this Discord message ID")
+        logger(f"Telegram message ID not found for this Discord message ID {discord_message_id}")
         return None
 
 def create_collection(collection_name):
