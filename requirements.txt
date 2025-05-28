@@ -1,10 +1,7 @@
-discord.py==2.4.0
 discord.py==2.5.0
-emoji==1.7.0
 emoji==2.14.1
 Pillow==11.2.1
 pillow_heif==0.22.0
 pymongo==4.13.0
 pyTelegramBotAPI==4.5.1
-pyTelegramBotAPI==4.27.0
 python-dotenv==1.1.0
