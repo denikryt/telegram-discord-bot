@@ -102,9 +102,6 @@ async def send_to_telegram_reply(message: Message, telegram_channel, collection_
         return
 
     text = get_caption(user_data, telegram_channel)
-    logger(f'Text for reply: {text}')
-
-    logger(f'message.attachments: {message.attachments}')
 
     try:
         if message.attachments:
@@ -190,7 +187,7 @@ async def process_attachment(attachment, text, telegram_channel, reply_to=None):
     file_bytes = await attachment.read()
     file_name = attachment.filename
     content_type = attachment.content_type or ''
-    
+
     try:
         tg_file = telebot.types.InputFile(BytesIO(file_bytes))
     except Exception as e:
