@@ -166,17 +166,18 @@ def extract_media(message):
         media.append((message.photo[-1].file_id, 'photo'))  # max resolution
     elif message.video:
         logger('--- Video detected in message')
-        media.append((message.video.file_id, 'video'))
-        logger(f'message.video.file_size: {message.video.file_size}')
-
         if message.video.file_size > MAX_FILE_SIZE:
-            # logger(f"Video file size exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB, skipping download.")
             raise ValueError(f"Video file size exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB, skipping download.")
+        media.append((message.video.file_id, 'video'))
     elif message.document:
         logger('--- Document detected in message')
+        if message.video.file_size > MAX_FILE_SIZE:
+            raise ValueError(f"Document file size exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB, skipping download.")
         media.append((message.document.file_id, 'document'))
     elif message.audio:
         logger('--- Audio detected in message')
+        if message.audio.file_size > MAX_FILE_SIZE:
+            raise ValueError(f"Audio file size exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB, skipping download.")
         media.append((message.audio.file_id, 'audio'))
     elif message.voice:
         logger('--- Voice message detected in message')

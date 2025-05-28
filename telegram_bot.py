@@ -68,7 +68,7 @@ def handle_text_from_group(message):
     else:
         discord_loop.call_soon_threadsafe(
             asyncio.create_task, 
-            send_message_to_discord(message, discord_channel, collection_name, media_files=None))
+            send_message_to_discord(message, discord_channel, collection_name))
 
 @tg_bot.message_handler(content_types=['photo', 'video', 'document', 'audio', 'voice'])
 def handle_media_from_group(message):
