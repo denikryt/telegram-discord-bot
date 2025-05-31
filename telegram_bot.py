@@ -342,7 +342,7 @@ def get_discord_channel_and_collection(message):
 
 def get_telegram_user_data(message):
     if message:
-        user_name = message.from_user.first_name
+        user_name = f'{message.from_user.first_name} {message.from_user.last_name}' if message.from_user.last_name else message.from_user.first_name
         user_id = message.from_user.id
         message_id = message.message_id
         text = message.text
