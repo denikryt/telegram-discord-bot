@@ -101,7 +101,7 @@ async def send_to_telegram_reply(message: Message, telegram_channel, collection_
         await send_to_telegram(message, telegram_channel, collection_name)
         return
 
-    text = get_caption(user_data, telegram_channel)
+    text = get_text(message, user_data, telegram_channel)
 
     try:
         if message.attachments:
@@ -143,7 +143,7 @@ async def send_to_telegram(message, telegram_channel, collection_name):
     from telegram_bot import tg_bot
 
     user_data = get_discord_user_data(message)
-    text = get_caption(user_data, telegram_channel)
+    text = get_text(message,user_data, telegram_channel)
 
     if message.attachments:
         logger(f'--- Message has {len(message.attachments)} attachments')
@@ -215,15 +215,29 @@ async def process_attachment(attachment, text, telegram_channel, reply_to=None):
         logger(f'Error sending file {file_name}: {e}')
         return None
 
-def get_caption(user_data, telegram_channel):
+def get_text(message, user_data, telegram_channel):
+    text = format_mentions(message)
+    
     if not check_last_message_user_id(
         current_user_id=str(user_data['user_id']),
         telegram_channel_id=str(telegram_channel),
         discord_channel_id=str(user_data['channel_id'])
     ):
         avatar_emoji = emoji.emojize(random.choice(config.AVATAR_EMOJIS))
-        return f"{avatar_emoji}<b>{user_data['user_name']}</b>\n{user_data['text']}"
-    return user_data['text']
+        return f"{avatar_emoji} <b>{user_data['user_name']}</b>\n{text}"
+    return text
+
+def format_mentions(message):
+    user_message = str(message.content)
+    mentions = message.mentions
+    if mentions:
+        logger('Mentions were found!')
+        for mention in mentions:
+            user_message = user_message.replace(f'<@{mention.id}>', f'<b><i>{mention.display_name}</i></b>')
+        return user_message
+    else:
+        logger('Mentions were not found!')
+        return user_message
 
 async def convert_heic_to_jpeg(file_bytes: bytes) -> BytesIO:
     heif_file = pillow_heif.read_heif(file_bytes)
@@ -240,7 +254,7 @@ async def convert_heic_to_jpeg(file_bytes: bytes) -> BytesIO:
 
 def get_discord_user_data(message):
     if message:
-        user_name = message.author.name
+        user_name = message.author.display_name
         user_id = message.author.id
         message_id = message.id
         text = message.content
