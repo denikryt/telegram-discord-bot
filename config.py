@@ -6,8 +6,8 @@ from pathlib import Path
 env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN_TEST")
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN_TEST")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 TELEGRAM_CHANNEL_LAST_USER = {}
 DISCORD_CHANNEL_LAST_USER = {}
@@ -31,4 +31,4 @@ AVATAR_EMOJIS = [
 ]
 
 FFMPEG_PATH = os.getenv("FFMPEG_PATH")
-WELCOME_MESSAGE = "Привіт! Я пересилаю повідомлення між Discord сервером Hacklab'а та Telegram.\nДоєднуйся до сервера Hacklab: https://discord.com/invite/sgCQBWpAm8"
+WELCOME_MESSAGE = "Привіт! Я пересилаю повідомлення між Discord сервером Kyiv Hackerspace Community та Telegram.\nДоєднуйся до Kyiv Hackerspace Community: https://discord.com/invite/sgCQBWpAm8"
