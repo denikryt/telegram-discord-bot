@@ -18,6 +18,7 @@ import telebot
 from PIL import Image
 import pillow_heif
 import io
+from hackbridge_formatter import hackbridge_header_handler
 
 intents = Intents.default()
 intents.message_content = True
@@ -91,6 +92,7 @@ async def send_to_telegram_reply(message: Message, telegram_channel, collection_
     from telegram_bot import tg_bot
 
     user_data = get_discord_user_data(message)
+    text, disable_preview = get_text_and_options(message, user_data, telegram_channel)
     reply_to_message_id = message.reference.message_id
     original_telegram_message_id = db.get_telegram_message_id(
         discord_message_id=reply_to_message_id,
@@ -100,8 +102,6 @@ async def send_to_telegram_reply(message: Message, telegram_channel, collection_
     if not original_telegram_message_id:
         await send_to_telegram(message, telegram_channel, collection_name)
         return
-
-    text = get_text(message, user_data, telegram_channel)
 
     try:
         if message.attachments:
@@ -121,6 +121,7 @@ async def send_to_telegram_reply(message: Message, telegram_channel, collection_
                         chat_id=telegram_channel,
                         text=fallback_text,
                         parse_mode='html',
+                        disable_web_page_preview=disable_preview,
                         reply_to_message_id=original_telegram_message_id
                     )
         else:
@@ -128,6 +129,7 @@ async def send_to_telegram_reply(message: Message, telegram_channel, collection_
                 chat_id=telegram_channel,
                 text=text,
                 parse_mode='html',
+                disable_web_page_preview=disable_preview,
                 reply_to_message_id=original_telegram_message_id
             )
             db.save_message_to_db(
@@ -143,7 +145,7 @@ async def send_to_telegram(message, telegram_channel, collection_name):
     from telegram_bot import tg_bot
 
     user_data = get_discord_user_data(message)
-    text = get_text(message,user_data, telegram_channel)
+    text, disable_preview = get_text_and_options(message, user_data, telegram_channel)
 
     if message.attachments:
         logger(f'--- Message has {len(message.attachments)} attachments')
@@ -158,9 +160,19 @@ async def send_to_telegram(message, telegram_channel, collection_name):
                 time.sleep(1)
             else:
                 fallback_text = f'{text}\n<code>Failed to send attachment: {attachment.filename}</code>'
-                tg_bot.send_message(chat_id=int(telegram_channel), text=fallback_text, parse_mode='html')
+                tg_bot.send_message(
+                    chat_id=int(telegram_channel),
+                    text=fallback_text,
+                    parse_mode='html',
+                    disable_web_page_preview=disable_preview
+                )
     else:
-        tg_message = tg_bot.send_message(chat_id=int(telegram_channel), text=text, parse_mode='html')
+        tg_message = tg_bot.send_message(
+            chat_id=int(telegram_channel),
+            text=text,
+            parse_mode='html',
+            disable_web_page_preview=disable_preview
+        )
         db.save_message_to_db(
             discord_message_id=user_data['message_id'],
             telegram_message_id=tg_message.message_id,
@@ -238,6 +250,13 @@ def format_mentions(message):
     else:
         logger('Mentions were not found!')
         return user_message
+
+def get_text_and_options(message, user_data, telegram_channel):
+    # HackBridge header handler: rewrite formatted headers from the HackBridge bot and drop link previews
+    hackbridge_payload = hackbridge_header_handler(message)
+    if hackbridge_payload:
+        return hackbridge_payload["text"], hackbridge_payload["disable_preview"]
+    return get_text(message, user_data, telegram_channel), False
 
 async def convert_heic_to_jpeg(file_bytes: bytes) -> BytesIO:
     heif_file = pillow_heif.read_heif(file_bytes)
