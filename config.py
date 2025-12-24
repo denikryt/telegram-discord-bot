@@ -32,3 +32,7 @@ AVATAR_EMOJIS = [
 
 FFMPEG_PATH = os.getenv("FFMPEG_PATH")
 WELCOME_MESSAGE = "Привіт! Я пересилаю повідомлення між Discord сервером Kyiv Hackerspace Community та Telegram.\nДоєднуйся до Kyiv Hackerspace Community: https://discord.com/invite/sgCQBWpAm8"
+
+# Toggle rendering of HackBridge headers (messages starting with -#).
+# Set to True to include headers, False to drop them. Managed directly in config, not via .env.
+HACKBRIDGE_RENDER_HEADER = False

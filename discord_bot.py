@@ -253,7 +253,9 @@ def format_mentions(message):
 
 def get_text_and_options(message, user_data, telegram_channel):
     # HackBridge header handler: rewrite formatted headers from the HackBridge bot and drop link previews
-    hackbridge_payload = hackbridge_header_handler(message)
+    hackbridge_payload = hackbridge_header_handler(
+        message, render_header=config.HACKBRIDGE_RENDER_HEADER
+    )
     if hackbridge_payload:
         return hackbridge_payload["text"], hackbridge_payload["disable_preview"]
     return get_text(message, user_data, telegram_channel), False

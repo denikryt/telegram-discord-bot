@@ -2,7 +2,7 @@ import html
 import re
 
 
-def hackbridge_header_handler(message):
+def hackbridge_header_handler(message, render_header: bool = False):
     author = getattr(message, "author", None)
     author_name = getattr(author, "name", "") if author else ""
     display_name = getattr(author, "display_name", "") if author else ""
@@ -21,10 +21,21 @@ def hackbridge_header_handler(message):
         return None
 
     lines = raw_content.splitlines()
+    header_removed = False
+
+    # If the first line starts with "-#", drop it entirely (skip sending header) when render_header is False
+    if lines and lines[0].lstrip().startswith("-#"):
+        if not render_header:
+            lines = lines[1:]
+            header_removed = True
+        else:
+            # strip the marker so the formatter can render the header cleanly
+            lines[0] = lines[0].lstrip()
+
     formatted_lines = []
 
     for idx, line in enumerate(lines):
-        if idx == 0:
+        if idx == 0 and not header_removed:
             formatted_lines.append(format_hackbridge_header_line(line))
         else:
             formatted_lines.append(format_hackbridge_body_line(line))
