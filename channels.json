@@ -1,0 +1,22 @@
+{
+    "channels_mapping": [
+      {
+        "telegram_channel_id": "-4800345982",
+        "discord_channel_id": "1453499779807182898",
+        "db_collection": "Telegram-Discord-TEST",
+        "name": "test-bot-channels"
+      },
+      {
+        "telegram_channel_id": "-1002260773919",
+        "discord_channel_id": "1341472781048483924",
+        "db_collection": "Telegram-Discord-NU",
+        "name": "NU"
+      },
+      {
+        "telegram_channel_id": "-1001545592282",
+        "discord_channel_id": "1375770108516896911",
+        "db_collection": "Telegram-Discord-SINTEZARIUM",
+        "name": "SINTEZARIUM"
+      }
+    ]
+}
