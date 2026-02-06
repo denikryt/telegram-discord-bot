@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+    app:
+        image: ghcr.io/denikryt/telegram-discord-bot:${GIT_COMMIT_HASH:-latest}
+        dns:
+            - 8.8.8.8
+            - 8.8.4.4
+        environment:
+            - MONGO_URI=${MONGO_URI}
+            - DISCORD_TOKEN=${DISCORD_TOKEN}
+            - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+            - FFMPEG_PATH=/usr/bin/ffmpeg
+        deploy:
+            update_config:
+                order: start-first
+        networks:
+            - infra_mongo-rs-net
+
+networks:
+    infra_mongo-rs-net:
+        external: true
