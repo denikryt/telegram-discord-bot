@@ -13,7 +13,7 @@ services:
             - FFMPEG_PATH=/usr/bin/ffmpeg
         deploy:
             update_config:
-                order: start-first
+                order: stop-first
         networks:
             - infra_mongo-rs-net
 
