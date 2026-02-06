@@ -2,21 +2,18 @@
     "channels_mapping": [
       {
         "telegram_channel_id": "-4800345982",
-        "discord_channel_id": "1453499779807182898",
-        "db_collection": "Telegram-Discord-TEST",
-        "name": "test-bot-channels"
+        "discord_channel_id": "1377246437812994149",
+        "db_collection": "TEST"
       },
       {
         "telegram_channel_id": "-1002260773919",
         "discord_channel_id": "1341472781048483924",
-        "db_collection": "Telegram-Discord-NU",
-        "name": "NU"
+        "db_collection": "NU31"
       },
       {
         "telegram_channel_id": "-1001545592282",
         "discord_channel_id": "1375770108516896911",
-        "db_collection": "Telegram-Discord-SINTEZARIUM",
-        "name": "SINTEZARIUM"
+        "db_collection": "SINTEZARIUM"
       }
     ]
 }

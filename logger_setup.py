@@ -25,8 +25,13 @@ def setup_logger():
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     rotating_handler.setFormatter(formatter)
 
+    # Console output
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
     # Set up the root logger
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logger.handlers = []  # Remove any existing handlers
     logger.addHandler(rotating_handler)
+    logger.addHandler(console_handler)

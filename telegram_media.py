@@ -23,7 +23,7 @@ MAX_FILE_SIZE = 20 * 1024 * 1024
 # --- FFMPEG ---
 # Check if ffmpeg is available in the system PATH
 FFMPEG_PATH = shutil.which("ffmpeg")
-logging.info(f"FFMPEG_PATH: {FFMPEG_PATH}")
+logging.debug("FFMPEG_PATH: %s", FFMPEG_PATH)
 
 # If not found, we can specify it manually (e.g. for Windows)
 if FFMPEG_PATH is None:
@@ -56,7 +56,7 @@ def compress_video(input_path, output_path, target_bitrate=TARGET_BITRATE):
     """
     Compresses a video file using ffmpeg to the specified bitrate.
     """
-    logger(f"--- Compressing video ---")
+    logging.debug("Compressing video")
 
     ffmpeg_cmd = [
         FFMPEG_PATH,
@@ -70,7 +70,7 @@ def compress_video(input_path, output_path, target_bitrate=TARGET_BITRATE):
         subprocess.run(ffmpeg_cmd, check=True)
         return True
     except subprocess.CalledProcessError as e:
-        logger(f"Error compressing video: {e}")
+        logging.error("Error compressing video", exc_info=True)
         return False
 
 # def convert_tgs_to_gif(tgs_path, gif_path, frame_skip=0, scale=1):
@@ -100,7 +100,7 @@ def download_telegram_file(bot, file_id):
     Downloads a file from Telegram using the provided bot and file_id.
     Converts .tgs stickers to .gif, compresses video if needed.
     """
-    logger(f"--- Downloading file from Telegram ---")
+    logging.debug("Downloading file from Telegram")
 
     ensure_directory_exists(DOWNLOAD_DIR)
 
@@ -142,15 +142,15 @@ def handle_video_file(video_path, file_name, output_dir):
     Returns path to compressed or original video.
     """
     if get_file_size_mb(video_path) > MAX_VIDEO_SIZE_MB:
-        logger(f"Video detected: {file_name}")
-        logger(f"Compressing video {file_name} as it exceeds {MAX_VIDEO_SIZE_MB} MB")
+        logging.debug("Video detected: %s", file_name)
+        logging.debug("Compressing video %s as it exceeds %s MB", file_name, MAX_VIDEO_SIZE_MB)
 
         compressed_path = os.path.join(output_dir, f"{os.path.splitext(file_name)[0]}_compressed.mp4")
         if compress_video(video_path, compressed_path):
             os.remove(video_path)
             return compressed_path
         else:
-            logger(f"Compression failed for video {file_name}, using original file.")
+            logging.warning("Compression failed for video %s, using original file", file_name)
 
     return video_path
 
@@ -158,32 +158,32 @@ def extract_media(message):
     """
     Extracts media from a Telegram message and returns a list of tuples with file_id and type.
     """
-    logger(f"--- Extracting media from message ---")
+    logging.debug("Extracting media from message")
 
     media = []
     if message.photo:
-        logger('--- Photo detected in message')
+        logging.debug("Photo detected in message")
         media.append((message.photo[-1].file_id, 'photo'))  # max resolution
     elif message.video:
-        logger('--- Video detected in message')
+        logging.debug("Video detected in message")
         if message.video.file_size > MAX_FILE_SIZE:
             raise ValueError(f"Video file size exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB, skipping download.")
         media.append((message.video.file_id, 'video'))
     elif message.document:
-        logger('--- Document detected in message')
+        logging.debug("Document detected in message")
         if message.document.file_size > MAX_FILE_SIZE:
             raise ValueError(f"Document file size exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB, skipping download.")
         media.append((message.document.file_id, 'document'))
     elif message.audio:
-        logger('--- Audio detected in message')
+        logging.debug("Audio detected in message")
         if message.audio.file_size > MAX_FILE_SIZE:
             raise ValueError(f"Audio file size exceeds {MAX_FILE_SIZE // (1024 * 1024)} MB, skipping download.")
         media.append((message.audio.file_id, 'audio'))
     elif message.voice:
-        logger('--- Voice message detected in message')
+        logging.debug("Voice message detected in message")
         media.append((message.voice.file_id, 'voice'))
     elif message.sticker:
-        logger('--- Sticker detected in message')
+        logging.debug("Sticker detected in message")
         media.append((message.sticker.file_id, 'sticker'))
     return media
 
@@ -199,14 +199,10 @@ def clean_media_files(media_files):
     """
     Cleans up media files after processing.
     """
-    logger(f"--- Cleaning up media files ---")
+    logging.debug("Cleaning up media files")
 
     for file_path in media_files:
         try:
             os.remove(file_path)
         except Exception as e:
-            print(f"Failed to remove file {file_path}: {e}")
-
-def logger(log_text):
-    print(log_text)
-    logging.info(log_text)
+            logging.warning("Failed to remove file %s: %s", file_path, e)

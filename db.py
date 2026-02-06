@@ -3,23 +3,25 @@ from pymongo.server_api import ServerApi
 from dotenv import load_dotenv
 import logging
 import os
-import logging
 
 load_dotenv()
 
 # MongoDB configuration
-MONGO_URI = os.environ.get('MONGO_URI')
+# Support legacy env name MONGO_DB to avoid localhost fallback.
+MONGO_URI = os.environ.get('MONGO_URI') or os.environ.get('MONGO_DB')
+
+if not MONGO_URI:
+    raise ValueError("Missing MongoDB connection string. Set MONGO_URI in .env (or MONGO_DB for legacy).")
 
 mongo_client = MongoClient(MONGO_URI, server_api=ServerApi('1'), serverSelectionTimeoutMS=60000)
-db = mongo_client
+db = mongo_client['telegram-discord-bot']
 
 def ping_mongo():
     try:
         mongo_client.admin.command('ping')
-        logger("Pinged your deployment. You successfully connected to MongoDB!")
     except Exception as e:
-        logger(f"Error connecting to MongoDB: {e}")
-        raise e
+        logging.error("Error connecting to MongoDB", exc_info=True)
+        raise
 
 def save_message_to_db(telegram_message_id, discord_message_id, collection_name):
     # Check if collection exists, if not create it
@@ -32,9 +34,8 @@ def save_message_to_db(telegram_message_id, discord_message_id, collection_name)
             "telegram_message_id": telegram_message_id,
             "discord_message_id": discord_message_id
         })
-        logger(f'Message saved to database: {telegram_message_id:} : {discord_message_id}')
     except Exception as e:
-        logger(f"Error saving message to database: {e}")
+        logging.error("Error saving message to database", exc_info=True)
     
 def get_discord_message_id(telegram_message_id, collection_name):
     # Check if collection exists, if not create it
@@ -44,11 +45,8 @@ def get_discord_message_id(telegram_message_id, collection_name):
     messages_collection = db[collection_name]
     result = messages_collection.find_one({"telegram_message_id": telegram_message_id})
     if result:
-        logger("Discord message ID have been found for this Telegram message ID")
         return result['discord_message_id']
-    else:
-        logger("Discord message ID not found for this Telegram message ID")
-        return None
+    return None
 
 def get_telegram_message_id(discord_message_id, collection_name):
     # Check if collection exists, if not create it
@@ -58,25 +56,17 @@ def get_telegram_message_id(discord_message_id, collection_name):
     messages_collection = db[collection_name]
     result = messages_collection.find_one({"discord_message_id": discord_message_id})
     if result:
-        logger(f"Telegram message ID {result['telegram_message_id']} have been found for this Discord message ID {discord_message_id}")
         return result['telegram_message_id']
-    else:
-        logger(f"Telegram message ID not found for this Discord message ID {discord_message_id}")
-        return None
+    return None
 
 def create_collection(collection_name):
     try:
         db.create_collection(collection_name)
-        logger(f"Collection {collection_name} created")
     except Exception as e:
-        logger(f"Error creating collection: {e}")
+        logging.error("Error creating collection", exc_info=True)
 
 def drop_collection(collection_name):
     collection_name.drop()
-    logger("Collection dropped")
-
-def logger(log_text):
-    print(log_text)
-    logging.info(log_text)
+    logging.warning("Collection dropped")
 
 ping_mongo()
