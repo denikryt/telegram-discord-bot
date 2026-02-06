@@ -8,9 +8,17 @@ import logging
 load_dotenv()
 
 # MongoDB configuration
-MONGO_DB = os.environ.get('MONGO_DB')
-mongo_client = MongoClient(MONGO_DB, server_api=ServerApi('1'), serverSelectionTimeoutMS=60000)  
-db = mongo_client['HACKLAB']
+MONGO_URI = os.environ.get('MONGO_URI')
+RAW_MONGO_DB = os.environ.get('MONGO_DB')
+MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME')
+
+# Backward compatibility: if MONGO_URI is missing but MONGO_DB looks like a URI, treat it as URI.
+if not MONGO_URI and RAW_MONGO_DB and RAW_MONGO_DB.startswith("mongodb"):
+    MONGO_URI = RAW_MONGO_DB
+    RAW_MONGO_DB = None
+
+mongo_client = MongoClient(MONGO_URI, server_api=ServerApi('1'), serverSelectionTimeoutMS=60000)
+db = mongo_client[RAW_MONGO_DB or MONGO_DB_NAME or 'HACKLAB']
 
 def ping_mongo():
     try:
